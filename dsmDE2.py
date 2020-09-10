@@ -167,7 +167,6 @@ class dsm2:
     def fragment_insert(self, ind=None, n=100, temp=2.0, mode='3s'):
 
         pose = ind.getPose()
-        #print('fit original %f \n'%ind.getFitness())
         
         mc = self.rosetta_conf.get_new_mc(pose, self.rosetta_conf.score3, temp)
         mover = self.rosetta_conf.get_mer(mode)
@@ -178,16 +177,13 @@ class dsm2:
         mover.apply(pose)
 
         pose.assign(mc.lowest_score_pose())
-        #print('fit pose 1 %f \n'%mc.lowest_score())
         
         original = self.rosetta_conf.score3(pose)
-        #print('fit original2 %f \n'%original)
         one_more = original is None
         evals = 0
 
         for _ in range(n):
             mover.apply(pose)
-            #print('fit eval %i %f \n'%(evals,pose.energies().total_energy()))
             evals += 1
             if pose.energies().total_energy() < original:
                 if not one_more:
@@ -199,94 +195,50 @@ class dsm2:
         pose.assign(mc.lowest_score_pose())
         ind.setPose(pose)
         ind.setFitness(mc.lowest_score())
-        #print('ultimo fit %f \n'%ind.getFitness())
         ind = self.update_angle_from_pose(ind, pose)
 
         return ind
 
     
-    def gera_trial(self, target, mut, f, cr):
+    def gera_trial(self, target, mut, r):
         
-        trial = Individuo(f, cr)
-        pose = self.rosetta_conf.get_generalPose()
-        genes = []
-        ss_nova = ''
+        pose = target.getPose()
         ss = self.rosetta_conf.ssq3
         ss_target = target.getSS()
         ss_mut = mut.getSS()
 
         # loop para gerar novo indivíduo
-        for j in range(0, self.D):
-            gen = Gene()
-            gen_doador = Gene()
+        for j in range(r, self.D):
+
+            if ss[j] == ss[r]:
+                gen_doador = Gene()
                     
-            if (ss_target[j] == ss[j] and ss_mut[j] == ss[j]) or (ss_target[j] != ss[j] and ss_mut[j] != ss[j]):
-                if random.uniform(0,1) <= 0.5:
+                if (ss_target[j] == ss[j] and ss_mut[j] == ss[j]) or (ss_target[j] != ss[j] and ss_mut[j] != ss[j]):
+                    if random.uniform(0,1) <= 0.5:
+                        gen_doador = target.genes[j]
+                    else:
+                        gen_doador = mut.genes[j]
+                        gen_doador.setSSType(ss_mut[j])
+                elif ss_target[j] == ss[j] and ss_mut[j] != ss[j]:
                     gen_doador = target.genes[j]
                 else:
                     gen_doador = mut.genes[j]
                     gen_doador.setSSType(ss_mut[j])
-            elif ss_target[j] == ss[j] and ss_mut[j] != ss[j]:
-                gen_doador = target.genes[j]
+
+                target.genes[j].setPhi(gen_doador.getPhi())
+                target.genes[j].setPsi(gen_doador.getPsi())
+                target.genes[j].setOmega(gen_doador.getOmega())
+
+                pose.set_phi((j+1), gen_doador.getPhi())
+                pose.set_psi((j+1), gen_doador.getPsi())
+                pose.set_omega((j+1), gen_doador.getOmega())
             else:
-                gen_doador = mut.genes[j]
-                gen_doador.setSSType(ss_mut[j])
+                break                 
 
-            gen.setPhi(gen_doador.getPhi())
-            gen.setPsi(gen_doador.getPsi())
-            gen.setOmega(gen_doador.getOmega())
-            gen.setSSType(gen_doador.getSSType())     
- 
-            # seta o objeto pose para calcular o fitness do individuo
-            pose.set_omega((j+1), gen.getOmega())
-            pose.set_phi((j+1), gen.getPhi())
-            pose.set_psi((j+1), gen.getPsi())
+        target.setPose(pose)
 
-            genes.append(gen)
-            ss_nova += gen.getSSType()
+        return target
 
-        trial.setSS(ss_nova)            
-        trial.setGenes(genes)
-        trial.setPose(pose)
-        trial.setFitness(self.rosetta_conf.score3(pose))
-        self.avaliacoes += 1
-
-        return trial
-
-
-    def gera_trial2(self, seed, target):
-        
-        trial1 = copy(target)
-        pose1 = target.getPose()
-        trial2 = copy(seed)
-        pose2 = seed.getPose()
-        ss = self.rosetta_conf.ssq3        # SS prevista pelo preditor
-        r = random.randint(0, self.D-9)
-
-        # loop para gerar novo indivíduo
-        for j in range(r, self.D):
-
-            if ss[j] == ss[r]:
-
-                # insere seed no target -> gera trial1
-                trial1.genes[j].setPhi(seed.genes[j].getPhi())
-                trial1.genes[j].setPsi(seed.genes[j].getPsi())
-                trial1.genes[j].setOmega(seed.genes[j].getOmega())
-                trial1.genes[j].setSSType(seed.genes[j].getSSType())
-                pose1.set_phi((j+1), seed.genes[j].getPhi())
-                pose1.set_psi((j+1), seed.genes[j].getPsi())
-                pose1.set_omega((j+1), seed.genes[j].getOmega())
-
-            else:
-                break
-  
-        trial1.setPose(pose1)
-        #trial2.setPose(pose2)
-        trial1.setFitness(self.rosetta_conf.score3(pose1))
-        #trial2.setFitness(self.rosetta_conf.score3(pose2))
-        self.avaliacoes += 1
-
-        return trial1
 
     def gera_trial3(self, target, seed, seedA, ind):
         
@@ -391,36 +343,33 @@ class dsm2:
         return ind
 
 
-    def geraMutacao(self, seed, seedA, ind, f, cr):
-        Vmut = Individuo(f, cr)
-        pose = self.rosetta_conf.get_generalPose()
-        genes = []
+    def geraMutacao(self, seed, seedA, ind, r):
 
-        for j in range(0, self.D):
-            gen = Gene()
+        Vmut = copy(seed)
+        pose = seed.getPose()
+        ss = self.rosetta_conf.ssq3
 
-            phi = seed.genes[j].getPhi() + (0.05 * (seedA.genes[j].getPhi() - ind.genes[j].getPhi()))
-            psi = seed.genes[j].getPsi() + (0.05 * (seedA.genes[j].getPsi() - ind.genes[j].getPsi()))
-            omega = seed.genes[j].getOmega() + (0.05 * (seedA.genes[j].getOmega() - ind.genes[j].getOmega()))
+        for j in range(r, self.D):
+
+            if ss[j] == ss[r]:
+                phi = seed.genes[j].getPhi() + (0.03 * (seedA.genes[j].getPhi() - ind.genes[j].getPhi()))
+                psi = seed.genes[j].getPsi() + (0.03 * (seedA.genes[j].getPsi() - ind.genes[j].getPsi()))
+                omega = seed.genes[j].getOmega() + (0.03 * (seedA.genes[j].getOmega() - ind.genes[j].getOmega()))
                                                    
-            gen.setPhi(phi)
-            gen.setPsi(psi)
-            gen.setOmega(omega)
+                Vmut.genes[j].setPhi(phi)
+                Vmut.genes[j].setPsi(psi)
+                Vmut.genes[j].setOmega(omega)
 
-            pose.set_phi((j+1), phi)
-            pose.set_psi((j+1), psi)
-            pose.set_omega((j+1), omega)
-
-            genes.append(gen)
-                    
-        Vmut.setGenes(genes)
-                
+                pose.set_phi((j+1), phi)
+                pose.set_psi((j+1), psi)
+                pose.set_omega((j+1), omega)
+            else:
+                break
+                                 
         Vmut.setPose(pose)
-        #Vmut.setFitness(self.rosetta_conf.score3(pose))
         self.dssp.apply(pose)    
         ss = pose.secstruct()
         Vmut.setSS(ss)
-        self.avaliacoes += 1
 
         return Vmut
 
@@ -498,24 +447,14 @@ class dsm2:
         
     def otimiza(self):
         self.init_pop() # gera a população inicial 
+        self.gera_vetor_dist()
+        self.gera_especies()
                 
         numGer = 1 # contador de gerações
-        especAux = []
-        cont_best = 0 # contador para reinicialização das espécies (if reinit == 10)
         
         while numGer < self.maxIteractions and self.avaliacoes < self.maxAval:
-            
-            '''if cont_best >= 5:
-                print('\n\nREINICIOU AS ESPECIES\n\n')
-                cont_best = 0
-                self.gera_vetor_dist()
-                self.gera_especies()
-                #self.reinicia_especies()   '''
-            self.gera_vetor_dist()
-            self.gera_especies()
-            
+                        
             self.pop[:] = []  # limpa o vetor de população
-
             self.printEspecies()
 
             best_index = 0    # armazena o índice do melhor indivíduo da população geral
@@ -523,54 +462,46 @@ class dsm2:
             contInd = 0       # conta o numero de individuos na população
             mediaFit = 0      # armazena o valor medio da população
 
-
             for i in range(0, len(self.especies)):         # linhas = especies
 
-                best_espec = 0                             # armazena o indice do best da especie
                 seed = self.especies[i][0]                 # semente da espécie atual
-                especie = []                               # inicializa uma espécie
-
+                
                 for j in range(0, len(self.especies[i])):  # colunas = individuos da especie
 
                     self.target = self.especies[i][j]      # individuo atual
+
                     # Auto ajuste dos parâmetros jDE
                     F_new, CR_new = self.de_service.autoAjuste(self.target.getF(), self.target.getCR())
-                    #F_new = self.de_service.ajuste_f()
-                    
+                                        
                     # Retorna outra semente
                     seedA = self.especies[self.get_outra_especie(len(self.especies), i)][0]
 
                     # Retorna outro individuo da mesma especie
                     ind = self.get_ind_aleatorio(i, j)
-
-                    ####### MUTAÇÃO 1 #######
-                    #Vmut = self.geraMutacao(seed, seedA, ind, F_new, self.CR)
+              
                     trial = copy(self.target)
                     trial.setF(F_new)
                     trial.setCR(CR_new)
 
                     ####### CROSSOVER #######
-                    #if random.uniform(0,1) <= CR_new:
-                    trial = self.gera_trial3(trial, seed, seedA, ind)
+                    if random.uniform(0,1) <= CR_new:
+                        r = random.randint(0, self.D-9)
+                        #Vmut = self.geraMutacao(seed, seedA, ind, r)   ### MUTAÇÃO 1
+                        trial = self.gera_trial(trial, seed, r)
 
                     ####### MUTAÇÃO 2 #######
-                    #if random.uniform(0,1) <= self.de_service.ajuste_f():
                     trial = self.fragment_insert(ind=trial, mode=self.get_mode())
                                         
                     ####### SELEÇÃO #######
                     if trial.getFitness() <= self.target.getFitness():
                         self.pop.append(copy(trial))
-                        #especie.append(copy(trial))
                     else:
-                        x1, x2 = self.conta_ss(trial, self.target)
-                        if x1 > x2:
-                            self.pop.append(copy(trial))
-                            #especie.append(copy(trial))
-                        else:
-                            self.pop.append(copy(self.target))
-                            #especie.append(copy(self.target))
+                        #x1, x2 = self.conta_ss(trial, self.target)
+                        #if x1 >= x2:
+                        #    self.pop.append(copy(trial))
+                        #else:
+                        self.pop.append(copy(self.target))
                     self.pop[contInd].setIndex(contInd)     # seta o indice da pop geral
-                    #especie[j].setIndex(contInd)                # seta o indice..
 
                     # Verifica o melhor indivíduo de toda a população 
                     if self.pop[contInd].getFitness() <= self.pop[best_index].getFitness():
@@ -579,43 +510,20 @@ class dsm2:
                         bad_index = contInd
                     mediaFit = mediaFit + self.pop[contInd].getFitness()
 
-                    # Verifica o melhor indivíduo da espécie atual
-                    #if especie[j].getFitness() <= especie[best_espec].getFitness():
-                     #   best_espec = j
-
                     contInd += 1            
             
-                # Atualiza a semente da espécie atual
-                '''if best_espec != 0:
-                    temp = especie[0]
-                    especie[0] = especie[best_espec]
-                    especie[best_espec] = temp
-                especAux.append(especie)'''
-
             Log().best_score3(self.caminho+self.nome, self.pop[best_index].getFitness())
             Log().media_score3(self.caminho+self.nome, mediaFit / self.NP)
-
-            # conta ha quantas gerações o best não muda
-            if self.pop[best_index].getFitness() >= self.min_fit:
-                cont_best += 1
-            else:
-                cont_best = 0
 
             self.min_fit = self.pop[best_index].getFitness()      
             self.max_fit = self.pop[bad_index].getFitness()
 
-            '''self.especies[:] = []
-            self.especies = copy(especAux)
-            especAux[:] = []'''
-
-            #print('\nDIVERSIDADE %f \n' %self.avg_rmsd())
+            self.gera_vetor_dist()
+            self.gera_especies()
             numGer += 1
-
-        print('---------------------------------SCORE3 %f' %self.pop[best_index].getFitness())
-        self.printPDB(self.pop[best_index].getPose(), self.nome+'_best')
 
         for s in range(0, len(self.especies)):
             nome = self.nome+'_'+str(s)
             self.printPDB(self.especies[s][0].getPose(), nome)        
 
-        return self.pop[best_index].getPose()
+        return self.especies[0][0].getPose()

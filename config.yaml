@@ -12,9 +12,9 @@ CR: 0.9
 # 2: cria 2 trials, cruzando seed e aleatorio com o target, gera mutação de acordo com o parametro
 # 3: insere um fragmento de target no seed
 mutation: 1
-maxIteractions: 10000
+maxIteractions: 5000
 gFactor: 0.0
-proteinName: '1vii'
+proteinName: '2p5k'
 # tipos de protocolo para geração de fragmentos no rosetta: 
 # quota(utiliza 3 preditores) ou best(utiliza psipred)
 protocolo: 'quota'
