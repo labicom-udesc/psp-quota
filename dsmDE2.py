@@ -1,6 +1,7 @@
 import random
 import yaml
 import bounds
+import time
 from copy import copy
 from log import Log
 from individuo import Individuo
@@ -11,7 +12,7 @@ from pathos.multiprocessing import ThreadingPool as Pool
 
 class dsm2:
     
-    def __init__(self, rosetta_conf):
+    def __init__(self, rosetta_conf, caminho, nome):
         with open("config.yaml", 'r') as stream:
             try:
                 config = yaml.load(stream)
@@ -45,8 +46,10 @@ class dsm2:
         self.avaliacoes = 0
         self.bounds = bounds.Bounds()
         self.dssp = self.rosetta_conf.dssp
-        self.caminho = 'testes_protocol/'+self.protocolo+'/'+self.proteinName+'/'
-        self.nome = str(random.random())   # nome do arquivo para log
+        #self.caminho = 'testes_protocol/'+self.protocolo+'/'+self.proteinName+'/'
+        self.caminho = caminho
+        #self.nome = str(random.random())   # nome do arquivo para log
+        self.nome = nome
 
 
     # Gera os vetores de distância euclidiana
@@ -160,8 +163,8 @@ class dsm2:
 
         self.min_fit = self.pop[best_index].getFitness()      
         self.max_fit = self.pop[bad_index].getFitness()
-        Log().best_score3(self.caminho+self.nome, self.pop[best_index].getFitness())
-        Log().media_score3(self.caminho+self.nome, soma / self.NP)
+        Log().best_score3(self.caminho+self.nome, self.avaliacoes, self.pop[best_index].getFitness())
+        Log().media_score3(self.caminho+self.nome, self.avaliacoes, soma / self.NP)
 
     
     def fragment_insert(self, ind=None, n=100, temp=2.0, mode='3s'):
@@ -446,16 +449,20 @@ class dsm2:
 
         
     def otimiza(self):
+        time_pop_inicial = time.time()
+
         self.init_pop() # gera a população inicial 
         self.gera_vetor_dist()
         self.gera_especies()
                 
         numGer = 1 # contador de gerações
+
+        time_ciclo_evolutivo_start = time.time()
         
         while numGer < self.maxIteractions and self.avaliacoes < self.maxAval:
                         
             self.pop[:] = []  # limpa o vetor de população
-            self.printEspecies()
+            #self.printEspecies()
 
             best_index = 0    # armazena o índice do melhor indivíduo da população geral
             bad_index = 0     # armazena o índice do pior indivíduo da população geral
@@ -474,10 +481,10 @@ class dsm2:
                     F_new, CR_new = self.de_service.autoAjuste(self.target.getF(), self.target.getCR())
                                         
                     # Retorna outra semente
-                    seedA = self.especies[self.get_outra_especie(len(self.especies), i)][0]
+                    #seedA = self.especies[self.get_outra_especie(len(self.especies), i)][0]
 
                     # Retorna outro individuo da mesma especie
-                    ind = self.get_ind_aleatorio(i, j)
+                    #ind = self.get_ind_aleatorio(i, j)
               
                     trial = copy(self.target)
                     trial.setF(F_new)
@@ -493,14 +500,16 @@ class dsm2:
                     trial = self.fragment_insert(ind=trial, mode=self.get_mode())
                                         
                     ####### SELEÇÃO #######
-                    if trial.getFitness() <= self.target.getFitness():
+                    if trial.getFitness() < self.target.getFitness():
                         self.pop.append(copy(trial))
-                    else:
-                        #x1, x2 = self.conta_ss(trial, self.target)
-                        #if x1 >= x2:
-                        #    self.pop.append(copy(trial))
-                        #else:
+                    elif trial.getFitness() > self.target.getFitness():
                         self.pop.append(copy(self.target))
+                    else:
+                        x1, x2 = self.conta_ss(trial, self.target)
+                        if x1 > x2:
+                            self.pop.append(copy(trial))
+                        else:
+                            self.pop.append(copy(self.target))
                     self.pop[contInd].setIndex(contInd)     # seta o indice da pop geral
 
                     # Verifica o melhor indivíduo de toda a população 
@@ -512,8 +521,8 @@ class dsm2:
 
                     contInd += 1            
             
-            Log().best_score3(self.caminho+self.nome, self.pop[best_index].getFitness())
-            Log().media_score3(self.caminho+self.nome, mediaFit / self.NP)
+            Log().best_score3(self.caminho+self.nome, self.avaliacoes, self.pop[best_index].getFitness())
+            Log().media_score3(self.caminho+self.nome, self.avaliacoes, mediaFit / self.NP)
 
             self.min_fit = self.pop[best_index].getFitness()      
             self.max_fit = self.pop[bad_index].getFitness()
@@ -522,8 +531,25 @@ class dsm2:
             self.gera_especies()
             numGer += 1
 
+        time_ciclo_evolutivo_end = time.time()
+
+        Log().time(self.caminho+self.nome, 'Tempo ciclo evolutivo', time_ciclo_evolutivo_end - time_ciclo_evolutivo_start)
+        Log().time(self.caminho+self.nome, 'Tempo pop inicial', time_ciclo_evolutivo_end - time_pop_inicial)
+
+        rmsd_best = 0
+        index_best = 0
         for s in range(0, len(self.especies)):
             nome = self.nome+'_'+str(s)
-            self.printPDB(self.especies[s][0].getPose(), nome)        
+            self.printPDB(self.especies[s][0].getPose(), nome)
+            rmsd = self.rosetta_conf.get_rmsd_from_native(self.especies[s][0].getPose())  
+            Log().rmsd(self.caminho+self.nome, s, rmsd, self.especies[s][0].getFitness())
+            #print('RMSD IND %i %f\n' %(s,rmsd))
+            if rmsd_best == 0:
+                rmsd_best = rmsd
+                index_best = s
+            elif rmsd < rmsd_best:
+                rmsd_best = rmsd
+                index_best = s  
+        #print('melhor individuo %i %f\n' %(index_best, rmsd_best)) 
 
-        return self.especies[0][0].getPose()
+        return self.especies[index_best][0].getPose()

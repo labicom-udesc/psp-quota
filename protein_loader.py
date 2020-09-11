@@ -3,8 +3,9 @@ import re
 
 
 class ProteinLoader:
-    def __init__(self, name=None):
+    def __init__(self, name=None, protocolo=None):
         self.name = name
+        self.protocolo = protocolo
 
         self.fragset3_path = None
         self.fragset9_path = None
@@ -19,14 +20,22 @@ class ProteinLoader:
 
         self.protein_data_path = '../../protein_data'
 
-    def load(self, name=None):
+    def load(self, name=None, protocolo=None):
         if name is None:
             name = self.name
         else:
             self.name = name
 
+        if protocolo is None:
+            protocolo = self.protocolo
+        else:
+            self.protocolo = protocolo
+
         if name is None and self.name is None:
             raise ValueError('No protein was specified')
+
+        if protocolo is None and self.protocolo is None:
+            raise ValueError('No protocol was specified')
 
         original = os.path.dirname(os.path.realpath(__file__))
         self.original = os.getcwd()
@@ -84,13 +93,13 @@ class ProteinLoader:
                             self.mufold_prob.append(entries[0:7])
 
 
-            f3 = base + '/' + name + '/output/' + name + '.200.3mers'
+            f3 = base + '/' + name + '/output_' + protocolo + '/' + name + '.200.3mers'
             if os.path.isfile(f3):
                 self.fragset3_path = f3
             else:
                 raise FileNotFoundError('Could not find %s' % f3)
 
-            f9 = base + '/' + name + '/output/' + name + '.200.9mers'
+            f9 = base + '/' + name + '/output_' + protocolo + '/' + name + '.200.9mers'
             if os.path.isfile(f9):
                 self.fragset9_path = f9
             else:

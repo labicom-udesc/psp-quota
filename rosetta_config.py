@@ -9,7 +9,7 @@ import ramachandran.src.ramachandran as rama  # pylint: disable=E0401
 
 class RosettaConfig:
 
-    def __init__(self, name):
+    def __init__(self, name, protocolo):
         self.scorefxn = pyrosetta.get_fa_scorefxn()
         self.score0 = pyrosetta.create_score_function('score0')
         self.score3 = pyrosetta.create_score_function('score3')
@@ -23,7 +23,7 @@ class RosettaConfig:
         self.fragset9 = pyrosetta.rosetta.core.fragment.ConstantLengthFragSet(9)
         
         self.protein_loader = protein_loader.ProteinLoader()
-        self.protein_loader.load(name)
+        self.protein_loader.load(name, protocolo)
         self.name, self.fasta, self.psi_pred, self.ssq3, self.ssq8, self.native_path, self.fragset3_path, self.fragset9_path, self.mufold_prob = self.protein_loader.get_data()
 
         self.native = pyrosetta.pose_from_pdb(self.native_path)
