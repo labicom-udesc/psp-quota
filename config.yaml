@@ -7,17 +7,9 @@ T1: 0.1
 T2: 0.1
 F: 0.5
 CR: 0.9
-# tipos de mutacao:
-# 1: cria 2 trials, inserindo fragmentos no target
-# 2: cria 2 trials, cruzando seed e aleatorio com o target, gera mutação de acordo com o parametro
-# 3: insere um fragmento de target no seed
-mutation: 1
-maxIteractions: 1000
-gFactor: 0.0
-proteinName: '1crn'
+maxAval: 1000000
+proteinName: 't0868'
 # tipos de protocolo para geração de fragmentos no rosetta: 
 # quota(utiliza 3 preditores) = quota <--- usar
-# ou best(utiliza psipred, spider, mufold) = psi ou spi ou mu <--- usar
+# ou best(utiliza psipred, spider, raptor) = psi ou spi ou rap <--- usar
 protocolo: 'quota'
-gaussianFactor: 0.1
-gapPercentage: 0.0

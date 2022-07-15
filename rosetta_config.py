@@ -3,7 +3,7 @@ import protein_loader
 import os
 import sys
 
-sys.path.append('../external')
+sys.path.append('external')
 
 import ramachandran.src.ramachandran as rama  # pylint: disable=E0401
 
@@ -24,7 +24,9 @@ class RosettaConfig:
         
         self.protein_loader = protein_loader.ProteinLoader()
         self.protein_loader.load(name, protocolo)
-        self.name, self.fasta, self.psi_pred, self.ssq3, self.ssq8, self.native_path, self.fragset3_path, self.fragset9_path, self.mufold_prob = self.protein_loader.get_data()
+        self.name, self.fasta, self.ss3, self.probs, self.native_path, self.fragset3_path, self.fragset9_path, self.map = self.protein_loader.get_data()
+
+        #print(self.map)
 
         self.native = pyrosetta.pose_from_pdb(self.native_path)
 
@@ -34,6 +36,10 @@ class RosettaConfig:
         self.ramachandran = rama.Ramachandran()
         p1 = "/usr/local/lib/python3.6/dist-packages/pyrosetta-2019.39+release.93456a567a8-py3.6-linux-x86_64.egg/pyrosetta/database/scoring/score_functions/" + \
              "rama/shapovalov/kappa75/all.ramaProb"
+        # servidor
+        #p2 = "/home/nilcimar/.local/lib/python3.6/site-packages/pyrosetta-2020.37+release.3ba1aaa6963-py3.6-linux-x86_64.egg/pyrosetta/database/scoring/score_functions/rama/s" + \
+        #     "hapovalov/kappa75/all.ramaProb"
+        # local
         p2 = "/usr/lib/python3.5/site-packages/pyrosetta-4.0-py3.5-linux-x86_64.egg/pyrosetta/database/scoring/score_functions/rama/s" + \
              "hapovalov/kappa75/all.ramaProb"
         p3 = "/usr/local/lib/python3.6/dist-packages/pyrosetta-2019.39+release.93456a567a8-py3.6-linux-x86_64.egg/pyrosetta/da" + \
@@ -141,6 +147,9 @@ class RosettaConfig:
             raise TypeError('Rosetta pack with internal states is no longer suported')
         else:
             return pyrosetta.rosetta.core.scoring.CA_rmsd(pose, pose2)
+
+    def get_gdt(self, pose):
+        return pyrosetta.rosetta.core.scoring.CA_gdtmm(self.native, pose)
 
     def get_rmsd_from_native(self, pose):
         return self.get_rmsd_from_pose(self.native, pose)

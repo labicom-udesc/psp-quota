@@ -1,11 +1,12 @@
 .vscode
 __pycache__
+comandoM.txt
+extra
 testes
 testes artigo
 testes coca
+testes_2selecao
+testes_aleatorios
 testes_protocol
 testes_repack
-comandoM.txt
-
-protein_data
 *.pdb

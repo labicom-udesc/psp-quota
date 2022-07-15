@@ -1,0 +1,31 @@
+REMARK: estimated Ca RMSD for 616271_model_1.pdb
+REMARK: the three columns are residue index, amino acid and distance deviation
+1 V 2.72
+2 S 2.07
+3 C 1.67
+4 E 1.56
+5 D 1.26
+6 C 0.98
+7 P 1.51
+8 E 1.44
+9 H 1.22
+10 C 1.06
+11 S 1.56
+12 T 1.79
+13 Q 2.40
+14 K 1.88
+15 A 1.73
+16 Q 2.00
+17 A 1.98
+18 K 1.94
+19 C 1.82
+20 D 1.61
+21 N 1.51
+22 D 1.40
+23 K 1.01
+24 C 0.74
+25 V 0.66
+26 C 0.69
+27 E 0.53
+28 P 0.80
+29 I 1.06

@@ -11,14 +11,12 @@ class ProteinLoader:
         self.fragset9_path = None
 
         self.fasta = None
-        self.ssq8 = None      # SS prevista pelo mufold para Q8
-        self.ssq3 = None      # SS prevista pelo mufold para Q3
-        self.mufold_prob = [] # matriz com as probabilidades dos tipos SS
-        self.psi_pred = None
+        self.ss3 = None        # SS prevista pelo preditor para Q3
+        self.map = []
+        self.probs = []        # probabilidades para a SS do preditor
 
         self.native_path = None
-
-        self.protein_data_path = '../../protein_data'
+        self.protein_data_path = 'protein_data'
 
     def load(self, name=None, protocolo=None):
         if name is None:
@@ -40,6 +38,13 @@ class ProteinLoader:
         original = os.path.dirname(os.path.realpath(__file__))
         self.original = os.getcwd()
 
+        # servidor
+        '''dirname = os.path.dirname(__file__)
+        base = os.path.join(dirname, self.protein_data_path)
+
+        dest = os.path.join(base, self.name)'''
+
+        # local
         base = self.protein_data_path
 
         dest = base + '/' + self.name
@@ -62,7 +67,39 @@ class ProteinLoader:
 
                 self.fasta = self.fasta.split('>')[0]
 
-            if os.path.isfile(name + '.psipred.ss2'):
+
+            if os.path.isfile(name + '.contactmap.txt'):
+                with open(name + '.contactmap.txt', 'rt') as f:
+                    self.map = []
+                    cont = 0
+                    for line in f.readlines():
+                        if(line[0].isdigit() and cont < len(self.fasta)):
+                            l = re.split(' ', line)
+                            self.map.append(l[0])
+                            self.map.append(l[1])
+                            self.map.append(l[2])
+                            cont += 1
+
+                        
+            if os.path.isfile(name + '.raptorx.ss2'):
+                with open(name + '.raptorx.ss2', 'rt') as f:
+                    self.ss3 = ''
+                    self.probs = []
+                    for line in f.readlines()[1:]:
+                        tokens = re.sub(r"\s+", " ", line.rstrip().lstrip()).split(' ')
+                        if len(tokens) < 3:
+                            continue
+
+                        x = tokens[2]
+                        if tokens[2] == 'C':
+                            x = 'L'
+                        self.ss3 += x
+                        self.probs.append(tokens[3])
+                        self.probs.append(tokens[4])
+                        self.probs.append(tokens[5])
+
+
+            '''if os.path.isfile(name + '.psipred.ss2'):
                 with open(name + '.psipred.ss2', 'rt') as f:
                     self.psi_pred = ''
                     for line in f.readlines()[1:]:
@@ -70,10 +107,10 @@ class ProteinLoader:
                         if len(tokens) < 3:
                             continue
 
-                        self.psi_pred += tokens[2]
+                        self.psi_pred += tokens[2]'''
 
 
-            if os.path.isfile('mufold/query.ss'):
+            '''if os.path.isfile('mufold/query.ss'):
                 with open('mufold/query.ss', 'rt') as f:
                     self.ssq3 = ''
                     self.ssq8 = ''
@@ -90,7 +127,7 @@ class ProteinLoader:
                             c += 1
                         else:
                             entries = re.split(',', line.strip())
-                            self.mufold_prob.append(entries[0:7])
+                            self.mufold_prob.append(entries[0:7])'''
 
 
             f3 = base + '/' + name + '/output_' + protocolo + '/' + name + '.200.3mers'
@@ -110,5 +147,4 @@ class ProteinLoader:
         os.chdir(original)
 
     def get_data(self):
-        return (self.name, self.fasta, self.psi_pred, self.ssq3, self.ssq8, self.native_path, 
-                self.fragset3_path, self.fragset9_path, self.mufold_prob)
+        return (self.name, self.fasta, self.ss3, self.probs, self.native_path, self.fragset3_path, self.fragset9_path, self.map)
