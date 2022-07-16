@@ -1,4 +1,7 @@
-# PSP
+# DSEA Quota Protocol for the PSP Problem
+
+A Dynamic Speciation Evolutionary Algorithm with Fragment Insertion and Information-Based Adaptive Selection Strategy for Protein Structure Prediction
+
 The proposed approach consists of 2 main components, a fragment generator and a protein predictor.
 First run the fragment generator (https://github.com/labicom-udesc/protein-data-fetcher), 
 then run the predictor.
