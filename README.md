@@ -1,5 +1,5 @@
 # PSP
-The complete project consists of 2 projects, a fragment generator and a protein predictor.
+The proposed approach consists of 2 main components, a fragment generator and a protein predictor.
 First run the fragment generator, then run the predictor.
 If you already have the fragments, you don't need to run the fragment generator. Just set the PSP project's protein_loader.py file to the directory where the fragments are.
 
